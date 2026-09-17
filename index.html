@@ -122,31 +122,28 @@
         function logout() { auth.signOut(); }
 
         // نظام المهام السحابية
-        function addTask() {
-            const text = document.getElementById('task-input').value.trim();
-            const user = auth.currentUser;
-            if(!text || !user) return;
+        // نظام المهام السحابية (معدل لدعم اللصق الجماعي)
+function addTask() {
+    const inputField = document.getElementById('task-input');
+    const text = inputField.value.trim();
+    const user = auth.currentUser;
+    if (!text || !user) return;
 
+    const lines = text.split('\n');
+
+    lines.forEach(line => {
+        const cleanLine = line.trim();
+        if (cleanLine !== "") {
             db.collection('tasks').add({
-                text: text,
+                text: cleanLine,
                 userId: user.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => document.getElementById('task-input').value = '');
-        }
-
-        function loadTasks(userId) {
-            const list = document.getElementById('task-list');
-            db.collection('tasks').where('userId', '==', userId).onSnapshot(snap => {
-                list.innerHTML = '';
-                snap.forEach(doc => {
-                    const task = doc.data();
-                    list.innerHTML += `<li class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border">
-                        <span>${task.text}</span>
-                        <button onclick="db.collection('tasks').doc('${doc.id}').delete()" class="text-red-500 text-xs font-bold">حذف</button>
-                    </li>`;
-                });
             });
         }
+    });
+
+    inputField.value = '';
+}   }
 
         // نظام لوحة الرسم (Canvas)
         function initCanvas() {
