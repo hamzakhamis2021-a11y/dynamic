@@ -145,6 +145,21 @@ function addTask() {
     inputField.value = '';
 }
 
+        function loadTasks(userId) {
+    const list = document.getElementById('task-list');
+    if (!list) return;
+    
+    db.collection('tasks').where('userId', '==', userId).onSnapshot(snap => {
+        list.innerHTML = '';
+        snap.forEach(doc => {
+            const task = doc.data();
+            list.innerHTML += `<li class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border">
+                <span>${task.text}</span>
+                <button onclick="db.collection('tasks').doc('${doc.id}').delete()" class="text-red-500 text-xs font-bold">حذف</button>
+            </li>`;
+        });
+    });
+}
         // نظام لوحة الرسم (Canvas)
         function initCanvas() {
             const canvas = document.getElementById('drawing-canvas');
