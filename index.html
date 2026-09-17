@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الموقع الشامل الديناميكي بالذكاء الاصطناعي</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+
+    <!-- شريط التنقل العلوي -->
+    <header class="bg-white shadow-sm p-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold text-blue-600">🌐 منصتي الديناميكية</h1>
+        <div id="user-info" class="hidden flex items-center gap-4">
+            <span id="user-email-display" class="text-sm text-slate-600 font-semibold"></span>
+            <button onclick="logout()" class="text-red-500 text-sm font-bold hover:underline">خروج</button>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 max-w-2xl my-6">
+        
+        <!-- قسم المصادقة (تسجيل الدخول / إنشاء حساب) -->
+        <div id="auth-section" class="bg-white p-6 rounded-2xl shadow-md">
+            <h2 id="auth-title" class="text-2xl font-bold mb-4 text-center">تسجيل الدخول</h2>
+            <div class="space-y-4">
+                <input type="email" id="email" placeholder="البريد الإلكتروني" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="password" id="password" placeholder="كلمة المرور" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <button id="auth-btn" onclick="handleAuth()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">دخول</button>
+                <p class="text-center text-sm text-slate-500">
+                    <span id="toggle-text">ليس لديك حساب؟</span> 
+                    <button onclick="toggleAuthMode()" class="text-blue-600 font-bold underline mr-1">إنشاء حساب جديد</button>
+                </p>
+            </div>
+        </div>
+
+        <!-- قسم التطبيق الشامل (يظهر بعد تسجيل الدخول) -->
+        <div id="app-section" class="hidden space-y-6">
+            
+            <!-- أداة 1: إدارة المهام والملاحظات الديناميكية -->
+            <div class="bg-white p-6 rounded-2xl shadow-md">
+                <h3 class="text-lg font-bold mb-4 text-slate-700">📝 دفتر الملاحظات السحابي</h3>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="task-input" placeholder="اكتب ملاحظة جديدة..." class="flex-1 p-2 border rounded-lg outline-none">
+                    <button onclick="addTask()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700">إضافة</button>
+                </div>
+                <ul id="task-list" class="space-y-2"></ul>
+            </div>
+
+            <!-- أداة 2: لوحة الرسم التفاعلية (Canvas) -->
+            <div class="bg-white p-6 rounded-2xl shadow-md">
+                <h3 class="text-lg font-bold mb-4 text-slate-700">🎨 لوحة الرسم والتصميم الحر</h3>
+                <div class="border border-slate-300 rounded-lg overflow-hidden bg-slate-50 mb-3">
+                    <canvas id="drawing-canvas" width="550" height="250" class="w-full cursor-crosshair"></canvas>
+                </div>
+                <div class="flex justify-between">
+                    <button onclick="clearCanvas()" class="bg-red-500 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-red-600">مسح اللوحة</button>
+                    <span class="text-xs text-slate-400 self-center">ارسم بيدك مباشرة على الشاشة</span>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // ضع إعدادات الـ Firebase الخاصة بك هنا
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let isSignUp = false;
+
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            document.getElementById('auth-title').innerText = isSignUp ? "إنشاء حساب جديد" : "تسجيل الدخول";
+            document.getElementById('auth-btn').innerText = isSignUp ? "تسجيل" : "دخول";
+            document.getElementById('toggle-text').innerText = isSignUp ? "لديك حساب بالفعل؟" : "ليس لديك حساب؟";
+        }
+
+        function handleAuth() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if(!email || !password) return alert('الرجاء إدخال البيانات كاملة');
+
+            if(isSignUp) {
+                auth.createUserWithEmailAndPassword(email, password).catch(e => alert(e.message));
+            } else {
+                auth.signInWithEmailAndPassword(email, password).catch(e => alert(e.message));
+            }
+        }
+
+        auth.onAuthStateChanged(user => {
+            if(user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('hidden');
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('user-email-display').innerText = user.email;
+                loadTasks(user.uid);
+                initCanvas();
+            } else {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('app-section').classList.add('hidden');
+                document.getElementById('user-info').classList.add('hidden');
+            }
+        });
+
+        function logout() { auth.signOut(); }
+
+        // نظام المهام السحابية
+        function addTask() {
+            const text = document.getElementById('task-input').value.trim();
+            const user = auth.currentUser;
+            if(!text || !user) return;
+
+            db.collection('tasks').add({
+                text: text,
+                userId: user.uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => document.getElementById('task-input').value = '');
+        }
+
+        function loadTasks(userId) {
+            const list = document.getElementById('task-list');
+            db.collection('tasks').where('userId', '==', userId).onSnapshot(snap => {
+                list.innerHTML = '';
+                snap.forEach(doc => {
+                    const task = doc.data();
+                    list.innerHTML += `<li class="flex justify-between items-center bg-slate-50 p-2.5 rounded-lg border">
+                        <span>${task.text}</span>
+                        <button onclick="db.collection('tasks').doc('${doc.id}').delete()" class="text-red-500 text-xs font-bold">حذف</button>
+                    </li>`;
+                });
+            });
+        }
+
+        // نظام لوحة الرسم (Canvas)
+        function initCanvas() {
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            let painting = false;
+
+            function startPosition(e) { painting = true; draw(e); }
+            function endPosition() { painting = false; ctx.beginPath(); }
+            function draw(e) {
+                if(!painting) return;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#2563eb';
+
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            }
+
+            canvas.addEventListener('mousedown', startPosition);
+            canvas.addEventListener('mouseup', endPosition);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('touchstart', startPosition);
+            canvas.addEventListener('touchend', endPosition);
+            canvas.addEventListener('touchmove', draw);
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>
